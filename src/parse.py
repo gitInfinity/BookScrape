@@ -39,7 +39,7 @@ def main():
             ]
     for index, url in enumerate(urls, start=1):
         print(f"\n=== Fetching: {url} ===")
-        html = fetch_page(url)
+        html = fetch_page(url, f"catalogue-page-{index}.html")
         if html:
             books = parse_book_cards(html)
             print(f"Found {len(books)} books on page {index} ")
