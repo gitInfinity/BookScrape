@@ -3,7 +3,17 @@
 from bs4 import BeautifulSoup
 from config import WEBSITE_URL
 from fetch import fetch_page
+from urllib.parse import urljoin
 
+def extract_book_links(html: str, page_url: str) -> tuple[list[str],str | None]:
+    """Extract book links from HTML."""
+    soup = BeautifulSoup(html, "html.parser")
+    book_urls = [
+        urljoin(page_url, link["href"]) for link in soup.select("article.product_pod h3 a[href]")
+    ]
+    next_link = soup.select_one("li.next a[href]")
+    next_url = urljoin(page_url, next_link["href"]) if next_link else None
+    return book_urls, next_url
 
 def parse_book_cards(html: str) -> list[dict]:
     """Extract book information from HTML."""
@@ -33,20 +43,32 @@ def parse_book_cards(html: str) -> list[dict]:
 
 def main():
     
-    urls = [WEBSITE_URL + "catalogue/category/books_1", 
-            WEBSITE_URL + "catalogue/category/books_1/page-2.html", 
-            WEBSITE_URL + "catalogue/category/books_1/page-3.html"
-            ]
-    for index, url in enumerate(urls, start=1):
+    url = WEBSITE_URL + "catalogue/page-1.html"
+    catalogue_pages = 0
+    discovered_urls = []
+    
+    while url and catalogue_pages < 3:
+        catalogue_pages += 1
+        cache_name = f"catalogue-page-{catalogue_pages}.html"
         print(f"\n=== Fetching: {url} ===")
-        html = fetch_page(url, f"catalogue-page-{index}.html")
-        if html:
-            books = parse_book_cards(html)
-            print(f"Found {len(books)} books on page {index} ")
-            for book in books[:3]:  # Show first 3 books
-                print(f"  - {book['title']}: {book['price']} (Rating: {book['rating']}/5)")
-        else:
+        html = fetch_page(url, cache_name)
+        if not html:
             print(f"Failed to fetch {url}")
+            return
+        book_urls, next_url = extract_book_links(html, url)
+        discovered_urls.extend(book_urls)
+        
+        books = parse_book_cards(html)
+        print(f"Found {len(books)} books on page {catalogue_pages}")
+        
+        for book in books[:3]:  # Show first 3 books per page
+            print(f"  - {book['title']}: {book['price']} (Rating: {book['rating']}/5)")
+        
+        url = next_url
+        
+    unique_book_urls = set(discovered_urls)
+    print(f"\nTotal unique book URLs discovered: {len(unique_book_urls)}")
+    
         
 if __name__ == "__main__":
     main()
