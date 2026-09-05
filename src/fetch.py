@@ -2,6 +2,8 @@
 
 import requests
 
+from config import WEBSITE_URL
+
 def fetch_page(url: str) -> str | None:
     """Fetch a page and return its HTML, or None on failure."""
     try:
@@ -15,7 +17,7 @@ def fetch_page(url: str) -> str | None:
     
 def main():
     # Example usage
-    url = "https://books.toscrape.com/"
+    url = WEBSITE_URL
     html = fetch_page(url)
     if html:
         print(f"Fetched {len(html)} characters from {url}")  # Print first 500 characters of the HTML
